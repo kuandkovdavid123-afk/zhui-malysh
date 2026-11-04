@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Жуй-Малыш | Умный трекер прикорма и развития жевания</title>
+  
+  <!-- Google Fonts: Nunito & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Nunito', 'sans-serif'],
+            mono: ['Inter', 'monospace']
+          },
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              200: '#fde68a',
+              300: '#fcd34d',
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+              800: '#92400e',
+              900: '#78350f'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-[#fcfaf6] text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- Top App Navigation Bar -->
+  <header class="bg-white border-b border-amber-100/80 sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/95">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between py-2.5">
+      
+      <!-- Brand & Mascot -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('tracker')">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 text-white flex items-center justify-center text-2xl shadow-md shadow-amber-200">
+          🥕
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-black text-xl tracking-tight text-slate-900">Жуй-Малыш</span>
+            <span class="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">PRO</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-medium">Трекер прикорма, жевания и речи</div>
+        </div>
+      </div>
+
+      <!-- Quick Child Pill & Fast Action Header Buttons -->
+      <div class="flex items-center gap-1.5 sm:gap-3">
+        <!-- Child Info Pill -->
+        <div onclick="switchTab('profile')" class="flex items-center gap-2 bg-amber-50/70 border border-amber-200/80 px-2 sm:px-3 py-1.5 rounded-xl cursor-pointer hover:bg-amber-100/70 transition" title="Перейти в профиль малыша">
+          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-black text-xs sm:text-sm">
+            👶
+          </div>
+          <div class="text-left">
+            <div class="font-extrabold text-[11px] sm:text-xs text-slate-800 leading-tight flex items-center gap-1">
+              <span id="headerChildName">Малыш</span>
+              <span class="text-amber-600 font-bold">·</span>
+              <span id="headerChildAge" class="text-amber-700 font-bold">0 мес</span>
+            </div>
+            <div id="headerChildStage" class="text-[9px] sm:text-[10px] text-slate-500 font-medium hidden sm:block">Прикорм</div>
+          </div>
+        </div>
+
+        <!-- Doctor Export Button (Desktop & Tablet) -->
+        <button onclick="openDoctorReportModal()" class="hidden sm:inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold shadow-sm transition">
+          <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i>
+          Отчет врача
+        </button>
+
+        <!-- Doctor Export Icon (Mobile Only) -->
+        <button onclick="openDoctorReportModal()" class="sm:hidden p-2 rounded-xl bg-slate-900 text-white shadow-sm transition" title="Отчет для врача">
+          <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i>
+        </button>
+
+        <!-- Diploma Badge Button -->
+        <button onclick="openDiplomaModal()" class="p-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 transition" title="Открыть Диплом юного жевателя">
+          <i data-lucide="award" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+        </button>
+
+        <!-- User Profile & Auth Status -->
+        <div id="userHeaderSection" class="hidden flex items-center gap-1 sm:gap-2">
+          <div class="flex items-center gap-1.5 bg-slate-100 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700" title="Текущий родитель">
+            <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center text-[10px] sm:text-xs font-black">👤</span>
+            <span id="headerUserName" class="hidden md:inline max-w-[110px] truncate">Пользователь</span>
+          </div>
+          <button onclick="handleLogout()" class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Выйти из аккаунта">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div id="authHeaderButtons" class="flex items-center gap-1 sm:gap-2">
+          <button onclick="openAuthModal('login')" class="text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl border border-amber-300 text-amber-800 hover:bg-amber-50 transition">
+            Вход
+          </button>
+          <button onclick="openAuthModal('register')" class="text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition">
+            Регистрация
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Main Navigation Bar Tabs -->
+    <div class="border-t border-slate-100 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto space-x-1 sm:space-x-2 py-1.5 scrollbar-none">
+        
+        <button data-tab="tracker" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition whitespace-nowrap text-amber-600 bg-amber-50 border border-amber-500">
+          <i data-lucide="calendar-check" class="w-4 h-4"></i>
+          Трекер питания
+        </button>
+
+        <button data-tab="profile" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:text-slate-900 border border-transparent">
+          <i data-lucide="user" class="w-4 h-4"></i>
+          Профиль малыша
+        </button>
+
+        <button data-tab="education" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:text-slate-900 border border-transparent">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+          Обучение и прикус
+        </button>
+
+        <button data-tab="analytics" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:text-slate-900 border border-transparent">
+          <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+          Диаграммы и медали
+        </button>
+
+        <button data-tab="games" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:text-slate-900 border border-transparent">
+          <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+          Игры и челленджи
+        </button>
+
+        <button data-tab="community" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:text-slate-900 border border-transparent">
+          <i data-lucide="messages-square" class="w-4 h-4"></i>
+          Специалисты и форум
+        </button>
+
+        <button data-tab="reminders" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition whitespace-nowrap text-slate-600 hover:text-slate-900 border border-transparent">
+          <i data-lucide="bell-ring" class="w-4 h-4"></i>
+          Напоминания и колонка
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 md:pb-8">
+
+    <!-- ==================== TAB 1: TRACKER ==================== -->
+    <div id="pane-tracker" class="tab-pane space-y-6">
+      
+      <!-- Welcome Onboarding Banner for New Users -->
+      <div id="trackerWelcomeBanner" class="hidden bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="text-3xl">👶</div>
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base leading-tight">Добро пожаловать в «Жуй-Малыш»!</h3>
+            <p class="text-xs text-amber-100 mt-0.5">Заполните данные о вашем малыше в профиле, чтобы отслеживать зубки, аллергии и вести персональный дневник прикорма.</p>
+          </div>
+        </div>
+        <button onclick="switchTab('profile')" class="shrink-0 px-4 py-2 bg-white text-amber-900 rounded-xl text-xs font-black hover:bg-amber-50 shadow-sm transition">
+          Заполнить профиль ребенка ✏️
+        </button>
+      </div>
+
+      <!-- Date Bar & Controls -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="text-xs font-bold uppercase tracking-wider text-amber-600 mb-0.5">Ежедневный чек-лист кормлений</div>
+          <h2 id="currentDateDisplay" class="text-xl sm:text-2xl font-black text-slate-900">Сегодня</h2>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="setTrackerDate(-1)" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition">
+            Вчера
+          </button>
+          <button onclick="setTrackerDate(0)" class="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-amber-800 transition">
+            Сегодня
+          </button>
+          <input type="date" id="trackerDateInput" onchange="loadMealsForDate(this.value)" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          
+          <button onclick="openAddMealModal()" class="ml-auto md:ml-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs shadow-md shadow-amber-200 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            Добавить прием пищи
+          </button>
+        </div>
+      </div>
+
+      <!-- Day Statistics Summary Cards -->
+      <div id="daySummaryStats" class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm"></div>
+
+      <!-- Quick Template Pills -->
+      <div class="bg-amber-50/60 rounded-2xl p-3.5 border border-amber-200/60 flex items-center gap-2 overflow-x-auto text-xs">
+        <span class="font-bold text-amber-900 shrink-0 flex items-center gap-1">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i> Быстрый ввод:
+        </span>
+        <button onclick="applyMealTemplate('Банан спелый брусочками', 'finger_food', 'Отличный захват кулачком, жевал сам')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 shrink-0 font-medium transition">
+          🍌 Банан брусочками
+        </button>
+        <button onclick="applyMealTemplate('Овсяная каша с кусочками персика', 'soft_pieces', 'Жевал десенками')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 shrink-0 font-medium transition">
+          🥣 Овсянка с персиком
+        </button>
+        <button onclick="applyMealTemplate('Паровая тефтелька из индейки', 'soft_pieces', 'Размяли вилкой на микро-комочки')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 shrink-0 font-medium transition">
+          🍗 Паровая тефтелька
+        </button>
+        <button onclick="applyMealTemplate('Брокколи на пару мягкие соцветия', 'finger_food', 'Держал за ножку, жевал')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 shrink-0 font-medium transition">
+          🥦 Брокколи на пару
+        </button>
+        <button onclick="applyMealTemplate('Огурчик свежий очищенный соломкой', 'solid', 'Хрустит, чешет десны')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 shrink-0 font-medium transition">
+          🥒 Огурчик соломкой
+        </button>
+      </div>
+
+      <!-- Meals by Type Checklist Container -->
+      <div id="mealsContainer" class="space-y-4"></div>
+
+    </div>
+
+    <!-- ==================== TAB 2: PROFILE ==================== -->
+    <div id="pane-profile" class="tab-pane hidden space-y-6">
+      
+      <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+          <div>
+            <h2 class="text-2xl font-black text-slate-900">Профиль ребенка</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Индивидуальные особенности прикорма, прорезывание зубов и чувствительность</p>
+          </div>
+          <span class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center text-2xl font-black">
+            👶
+          </span>
+        </div>
+
+        <form id="childProfileForm" onsubmit="saveProfileHandler(event)" class="space-y-6">
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <!-- Child Name -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Имя ребенка</label>
+              <input type="text" name="name" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+            </div>
+
+            <!-- Birth Date -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Дата рождения</label>
+              <input type="date" name="birth_date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+            </div>
+
+            <!-- Gender -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Пол</label>
+              <select name="gender" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                <option value="boy">Мальчик 👦</option>
+                <option value="girl">Девочка 👧</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Feeding Stage Selector -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Текущий этап прикорма и текстур</label>
+            <select name="feeding_stage" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+              <option value="stage_1">1 этап: Первое знакомство / микродозы (4–6 мес)</option>
+              <option value="stage_2">2 этап: Гомогенные пюре (6–7 мес)</option>
+              <option value="stage_3">3 этап: Пюре с мягкими микро-комочками (7–8 мес)</option>
+              <option value="stage_4">4 этап: Мягкие кусочки 0.5–1 см (8–9 мес)</option>
+              <option value="stage_5">5 этап: Пальчиковая еда / finger foods (9–10 мес)</option>
+              <option value="stage_6">6 этап: Твердые кусочки и общий стол (11–12+ мес)</option>
+            </select>
+            <p class="text-xs text-slate-400 mt-1">Определяет рекомендуемые размеры нарезки и рецепты в обучающем блоке.</p>
+          </div>
+
+          <!-- Teeth Count & Interactive Jaw Diagram -->
+          <div class="bg-slate-50/70 p-5 rounded-2xl border border-slate-200">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">Количество прорезавшихся зубов</label>
+                <span class="text-xs text-slate-500">Нажмите на зубки на схеме, чтобы отметить их появление:</span>
+              </div>
+              <input type="number" id="profileTeethCount" name="teeth_count" min="0" max="20" class="w-16 px-2.5 py-1.5 text-center font-black rounded-lg border border-slate-300 bg-white text-base">
+            </div>
+
+            <!-- Jaw Interactive Visualizer -->
+            <div class="flex flex-col items-center justify-center p-3 sm:p-4 bg-white rounded-xl border border-slate-200">
+              <div id="teethVisualMap" class="w-full"></div>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-2 text-center">💡 Даже при отсутствии жевательных зубов малыш эффективно жует твердую пищу плотными деснами!</p>
+          </div>
+
+          <!-- Allergies Section -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Аллергии и непереносимости</label>
+            <div id="allergiesList" class="flex flex-wrap gap-2 mb-3"></div>
+            <div class="flex items-center gap-2">
+              <input type="text" id="newAllergyInput" placeholder="Добавить аллерген (например: БКМ, яичный белок, клубника)" class="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+              <button type="button" onclick="addAllergy()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition">
+                + Добавить
+              </button>
+            </div>
+          </div>
+
+          <!-- Gag Reflex / Рвотный рефлекс -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 bg-purple-50/50 p-5 rounded-2xl border border-purple-100">
+            <div>
+              <label class="block text-xs font-bold text-purple-950 uppercase tracking-wider mb-1.5">Выраженность рвотного рефлекса (Gag reflex)</label>
+              <select name="gag_reflex_level" class="w-full px-3.5 py-2.5 rounded-xl border border-purple-200 text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white">
+                <option value="low">Низкая: ребенок спокойно переносит любые кусочки</option>
+                <option value="medium">Умеренная: кашляет при волокнах или сухой пище (норма)</option>
+                <option value="high">Высокая: частые позывы даже на мелкие крупинки</option>
+              </select>
+              <p class="text-[11px] text-purple-700 mt-1.5">Рвотный рефлекс у младенцев расположен ближе к кончику языка — это естественный защитный барьер, предотвращающий удушье.</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-purple-950 uppercase tracking-wider mb-1.5">Триггеры и заметки по рвотному рефлексу</label>
+              <textarea name="gag_reflex_notes" rows="3" placeholder="Например: кашляет от суховатого желтка или длинных волокон курицы..." class="w-full px-3 py-2 rounded-xl border border-purple-200 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white"></textarea>
+            </div>
+          </div>
+
+          <!-- Favorite Foods Tags -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Любимые продукты (safe foods)</label>
+            <div id="favoriteFoodsList" class="flex flex-wrap gap-2 mb-3"></div>
+            <div class="flex items-center gap-2">
+              <input type="text" id="newFoodInput" placeholder="Добавить любимый продукт (например: авокадо, печеная тыква)" class="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+              <button type="button" onclick="addFavoriteFood()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition">
+                + Добавить
+              </button>
+            </div>
+          </div>
+
+          <!-- General Notes -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Индивидуальные заметки для отчета врача</label>
+            <textarea name="notes" rows="2" placeholder="Пищевой интерес, поведение за стульчиком, навыки самостоятельного использования ложки..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"></textarea>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-4 border-t border-slate-100 flex justify-end">
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md shadow-amber-200 transition">
+              Сохранить профиль
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 3: EDUCATION ==================== -->
+    <div id="pane-education" class="tab-pane hidden space-y-8">
+      
+      <!-- Big Visual Infographic: Chewing vs Bite & Speech -->
+      <div class="bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+        <div class="max-w-3xl relative z-10">
+          <span class="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-extrabold uppercase tracking-wider mb-3">
+            Анатомия и развитие
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-black leading-tight">
+            Как жевание формирует правильный прикус и стимулирует речь
+          </h2>
+          <p class="text-amber-100 text-sm mt-2 leading-relaxed">
+            Акт активного жевания — это фундаментальная гимнастика для челюстно-лицевых мышц. Если ребенок долго питается исключительно пюре из блендера, челюсти не получают достаточной нагрузки для роста.
+          </p>
+
+          <!-- 3 Pillars Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+            <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+              <div class="text-2xl mb-1">🦷</div>
+              <h4 class="font-extrabold text-sm">Ширина челюсти</h4>
+              <p class="text-xs text-amber-100 mt-1 leading-snug">
+                Нагрузка стимулирует рост нижней челюсти. Это предотвращает скученность постоянных зубов в будущем.
+              </p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+              <div class="text-2xl mb-1">🗣️</div>
+              <h4 class="font-extrabold text-sm">Звуки Р, Л, Ш</h4>
+              <p class="text-xs text-amber-100 mt-1 leading-snug">
+                Перекладывание кусочков языком развивает латерализацию и тонус кончика языка, необходимый для чистой дикции.
+              </p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+              <div class="text-2xl mb-1">👃</div>
+              <h4 class="font-extrabold text-sm">Носовое дыхание</h4>
+              <p class="text-xs text-amber-100 mt-1 leading-snug">
+                Тренирует смыкание губ и укрепляет круговую мышцу рта, снижая слюнотечение и риск ротового дыхания.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison: Gag Reflex vs Choking (Рвотный рефлекс vs Удушье) -->
+      <div class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-100 shadow-sm">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xl">
+            🛡️
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-slate-900">Рвотный рефлекс (Gagging) vs Удушье (Choking)</h3>
+            <p class="text-xs text-slate-500">Памятка для родителей: как отличить норму от реальной опасности</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
+          <!-- Gagging (Safe) -->
+          <div class="bg-emerald-50/70 border-2 border-emerald-300 rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-emerald-800 bg-emerald-200/80 px-2.5 py-1 rounded-full">
+                ✅ Рвотный рефлекс (НОРМА)
+              </span>
+              <span class="text-emerald-700 font-bold text-xs">Не вмешиваться!</span>
+            </div>
+            <ul class="space-y-2 text-xs text-emerald-950 font-medium">
+              <li class="flex items-start gap-2">
+                <i data-lucide="volume-2" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+                <span><strong>Громкие звуки:</strong> ребенок кашляет, кряхтит, звучно выталкивает еду.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="smile" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+                <span><strong>Цвет лица:</strong> лицо краснеет от натуживания (но не синеет!).</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="arrow-right" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+                <span><strong>Движение языка:</strong> язык выталкивает комок вперед изо рта.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+                <span><strong>Действия родителей:</strong> сохранять спокойствие, улыбнуться, показать «кхе-кхе», не хлопать по спине!</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Choking (Danger) -->
+          <div class="bg-rose-50/70 border-2 border-rose-300 rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-rose-800 bg-rose-200/80 px-2.5 py-1 rounded-full">
+                🚨 Удушье (ТРЕБУЕТ ПОМОЩИ)
+              </span>
+              <span class="text-rose-700 font-bold text-xs">Действовать сразу!</span>
+            </div>
+            <ul class="space-y-2 text-xs text-rose-950 font-medium">
+              <li class="flex items-start gap-2">
+                <i data-lucide="volume-x" class="w-4 h-4 text-rose-600 shrink-0 mt-0.5"></i>
+                <span><strong>Полная тишина:</strong> ребенок не может издать звук или кашлянуть.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600 shrink-0 mt-0.5"></i>
+                <span><strong>Цвет лица:</strong> синеют губы, носогубный треугольник, кожа бледнеет.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="eye" class="w-4 h-4 text-rose-600 shrink-0 mt-0.5"></i>
+                <span><strong>Поведение:</strong> испуганные глаза, судорожные беззвучные вдохи.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-rose-600 shrink-0 mt-0.5"></i>
+                <span><strong>Помощь:</strong> положить на предплечье лицом вниз головой ниже туловища, нанести 5 скользящих ударов между лопатками.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Safe Cutting Guide by Age (Безопасная нарезка) -->
+      <div>
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900">Интерактивный гид по безопасной нарезке</h3>
+            <p class="text-xs text-slate-500">Выберите продукт, чтобы увидеть безопасную подачу по возрастам:</p>
+          </div>
+
+          <!-- Product Filters -->
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button onclick="renderCuttingGuide('apple')" data-product="apple" class="cutting-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-white transition">
+              🍎 Яблоко
+            </button>
+            <button onclick="renderCuttingGuide('carrot')" data-product="carrot" class="cutting-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition">
+              🥕 Морковь
+            </button>
+            <button onclick="renderCuttingGuide('grape')" data-product="grape" class="cutting-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition">
+              🍇 Виноград и черри
+            </button>
+            <button onclick="renderCuttingGuide('banana')" data-product="banana" class="cutting-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition">
+              🍌 Банан
+            </button>
+            <button onclick="renderCuttingGuide('meat')" data-product="meat" class="cutting-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 transition">
+              🍗 Мясо и птица
+            </button>
+          </div>
+        </div>
+
+        <!-- Cutting Guide Dynamic Container -->
+        <div id="cuttingGuideContent"></div>
+      </div>
+
+      <!-- Video Lessons Section -->
+      <div>
+        <div class="mb-4">
+          <h3 class="text-xl font-bold text-slate-900">Короткие видеоуроки для родителей</h3>
+          <p class="text-xs text-slate-500">Короткие практические разборы от детского логопеда и педиатра</p>
+        </div>
+        <div id="videoLessonsList" class="grid grid-cols-1 md:grid-cols-3 gap-5"></div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 4: ANALYTICS ==================== -->
+    <div id="pane-analytics" class="tab-pane hidden space-y-6">
+      
+      <!-- KPIs Bar -->
+      <div id="analyticsKPIs" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+      <!-- Charts Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Doughnut: Puree vs Solids Ratio -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-slate-800 text-base">Соотношение текстур в рационе</h3>
+              <p class="text-xs text-slate-400">Доля пюре, мягких кусочков, твердых и пальчиковых продуктов</p>
+            </div>
+            <span class="p-2 bg-amber-50 text-amber-600 rounded-xl"><i data-lucide="pie-chart" class="w-4 h-4"></i></span>
+          </div>
+          <div class="relative h-64">
+            <canvas id="textureDoughnutChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Bar/Line: Chewing Autonomy Dynamics -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-slate-800 text-base">Динамика навыка жевания</h3>
+              <p class="text-xs text-slate-400">Соотношение «жевал сам» vs «с помощью» и рост % твердой пищи</p>
+            </div>
+            <span class="p-2 bg-emerald-50 text-emerald-600 rounded-xl"><i data-lucide="trending-up" class="w-4 h-4"></i></span>
+          </div>
+          <div class="relative h-64">
+            <canvas id="chewingDynamicsChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chewing Medals & Badges Section -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-bold text-slate-900 text-lg">Жевательные медали и достижения</h3>
+            <p class="text-xs text-slate-400">Награды малыша за развитие навыков откусывания и жевания</p>
+          </div>
+          <button onclick="openDiplomaModal()" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition">
+            <i data-lucide="award" class="w-4 h-4"></i>
+            Диплом юного жевателя
+          </button>
+        </div>
+
+        <div id="achievementsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 5: GAMES & CHALLENGES ==================== -->
+    <div id="pane-games" class="tab-pane hidden space-y-6">
+      
+      <!-- Hero Interactive Game: Chew Apple / Carrot -->
+      <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="max-w-xl">
+          <span class="px-3 py-1 rounded-full bg-white/20 text-xs font-black uppercase tracking-wider">
+            Интерактивная игра-тренажер
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-black mt-2">«Прожуй яблочко или морковку!»</h2>
+          <p class="text-amber-100 text-xs sm:text-sm mt-1.5 leading-relaxed">
+            Включайте таймер перед едой! Малыш жует вместе с анимированным зайкой Жуйкой. Каждый хруст фиксируется звуковым сигналом и развивает силу челюстей!
+          </p>
+          
+          <div class="flex items-center gap-3 mt-5 flex-wrap">
+            <button onclick="startChewGame('хрустящее яблочко')" class="px-5 py-2.5 rounded-xl bg-white text-amber-900 font-extrabold text-xs shadow-lg hover:bg-amber-50 transition flex items-center gap-2">
+              <span>🍎</span> Играть с яблоком
+            </button>
+            <button onclick="startChewGame('паровую морковку')" class="px-5 py-2.5 rounded-xl bg-amber-900/40 hover:bg-amber-900/60 text-white border border-white/20 font-extrabold text-xs transition flex items-center gap-2">
+              <span>🥕</span> Играть с морковкой
+            </button>
+          </div>
+        </div>
+
+        <div class="shrink-0 text-center">
+          <div class="w-28 h-28 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-6xl shadow-inner">
+            🐰
+          </div>
+          <span class="text-xs font-bold text-amber-100 mt-2 block">Маскот Жуйка</span>
+        </div>
+      </div>
+
+      <!-- Challenge: Week Without Puree -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div>
+            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">7-дневный челлендж</span>
+            <h3 class="text-xl font-bold text-slate-900">Челлендж «Неделя без пюре»</h3>
+            <p class="text-xs text-slate-500">Плавный и безопасный отказ от блендера в пользу кусочков</p>
+          </div>
+          <div class="text-right">
+            <span id="challengeProgressText" class="text-sm font-black text-emerald-700">5 из 7 дней</span>
+            <div class="w-36 h-2.5 bg-slate-100 rounded-full overflow-hidden mt-1">
+              <div id="challengeProgressBar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 71%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="challengeDaysGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mt-4"></div>
+      </div>
+
+      <!-- 5 Steps Checklist: Moving from Purees to Solids -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-900 mb-1">Пошаговый чек-лист: «Вводим кусочки и учимся жевать»</h3>
+        <p class="text-xs text-slate-500 mb-4">5 ступеней мягкой адаптации детского пищевого интереса:</p>
+
+        <div class="space-y-3">
+          <div class="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="w-7 h-7 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">1</span>
+            <div>
+              <h5 class="text-xs font-bold text-slate-800">Ступень 1: Вилочное пюре с микро-неоднородностями</h5>
+              <p class="text-xs text-slate-600 mt-0.5">Вместо погружного блендера разминаем картофель, тыкву или банан обычной вилкой. Появляется первая текстура.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="w-7 h-7 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">2</span>
+            <div>
+              <h5 class="text-xs font-bold text-slate-800">Ступень 2: Мягкие микро-кубики (размером с рисовое зерно)</h5>
+              <p class="text-xs text-slate-600 mt-0.5">Добавляем в привычное пюре мягкие крошки отварной моркови или отварного яичного желтка.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="w-7 h-7 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">3</span>
+            <div>
+              <h5 class="text-xs font-bold text-slate-800">Ступень 3: Пальчиковые брусочки (Finger Food)</h5>
+              <p class="text-xs text-slate-600 mt-0.5">Морковь на пару, банан или кабачок брусочками под детский кулачок. Малыш сам кладет еду в рот и учится откусывать.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="w-7 h-7 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">4</span>
+            <div>
+              <h5 class="text-xs font-bold text-slate-800">Ступень 4: Волокнистые и упругие текстуры</h5>
+              <p class="text-xs text-slate-600 mt-0.5">Паровые котлетки и суфле из мяса птицы, мягкий сыр, кусочки рыбы без костей.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="w-7 h-7 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0">5</span>
+            <div>
+              <h5 class="text-xs font-bold text-slate-800">Ступень 5: Хруст и твердые продукты (общий стол)</h5>
+              <p class="text-xs text-slate-600 mt-0.5">Огуречная соломка, печеные яблочные дольки, детские галеты. Полноценное боковое жевание молярами.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 6: COMMUNITY & SPECIALISTS ==================== -->
+    <div id="pane-community" class="tab-pane hidden space-y-6">
+      
+      <!-- Specialist Support Section -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+          <div class="flex items-center gap-3">
+            <div id="specialistAvatar" class="w-12 h-12 rounded-2xl bg-amber-100 text-2xl flex items-center justify-center">
+              👩‍⚕️
+            </div>
+            <div>
+              <h3 id="specialistTitle" class="font-bold text-slate-900 text-base">Консультация детского логопеда-дефектолога</h3>
+              <p id="specialistSubtitle" class="text-xs text-slate-500">Прикус, уздечка, тонус языка, звуки речи и рвотный рефлекс</p>
+            </div>
+          </div>
+
+          <!-- Switch Specialist Buttons -->
+          <div class="flex items-center gap-2">
+            <button id="specTabLogoped" onclick="selectSpecialist('speech_therapist')" class="py-2 px-3 rounded-xl font-bold text-xs flex items-center gap-1.5 bg-amber-500 text-white shadow-sm">
+              👩‍⚕️ Логопед
+            </button>
+            <button id="specTabNutri" onclick="selectSpecialist('nutritionist')" class="py-2 px-3 rounded-xl font-bold text-xs flex items-center gap-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200">
+              🥗 Нутрициолог
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat messages container -->
+        <div id="specialistChatMessages" class="h-72 overflow-y-auto p-4 bg-slate-50/60 rounded-2xl border border-slate-200/80 mb-3 space-y-2">
+          <div class="flex justify-start mb-3">
+            <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3.5 max-w-[85%] text-xs text-slate-700 shadow-sm leading-relaxed">
+              Здравствуйте! Я ваш онлайн-консультант. Задайте любой вопрос о вводе кусочков, снижении чувствительности рвотного рефлекса, правильном прикусе или безопасной нарезке.
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Question Prompts -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-2 text-[11px]">
+          <span class="text-slate-400 font-bold shrink-0">Частые вопросы:</span>
+          <button onclick="askSpecialistPrompt('Ребенок давится и кашляет от кусочков, как преодолеть страх?')" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 hover:text-amber-900 rounded-lg text-slate-600 shrink-0 font-medium transition">
+            «Кашляет от кусочков, что делать?»
+          </button>
+          <button onclick="askSpecialistPrompt('Как именно жевание влияет на произношение буквы Р и шипящих?')" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 hover:text-amber-900 rounded-lg text-slate-600 shrink-0 font-medium transition">
+            «Как жевание влияет на звуки речи?»
+          </button>
+          <button onclick="askSpecialistPrompt('Как безопасно нарезать яблоко и морковь до года?')" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 hover:text-amber-900 rounded-lg text-slate-600 shrink-0 font-medium transition">
+            «Как безопасно нарезать твердые овощи?»
+          </button>
+        </div>
+
+        <!-- Input row -->
+        <div class="flex items-center gap-2 mt-2">
+          <input type="text" id="specialistQueryInput" onkeydown="if(event.key==='Enter') sendSpecialistQuery()" placeholder="Задайте вопрос специалисту..." class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          <button onclick="sendSpecialistQuery()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition">
+            <span>Отправить</span>
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Parents Forum Feed -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Форум родителей: опыт и взаимопомощь</h3>
+            <p class="text-xs text-slate-500">Реальные истории мам о переходе с пюре на общий стол</p>
+          </div>
+          <button onclick="openNewPostModal()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            Задать вопрос мамам
+          </button>
+        </div>
+
+        <div id="forumPostsContainer" class="space-y-4"></div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 7: REMINDERS & SMART SPEAKER ==================== -->
+    <div id="pane-reminders" class="tab-pane hidden space-y-6">
+      
+      <!-- Smart Speaker Voice Simulator (Yandex Alice / Marusia) -->
+      <div class="bg-gradient-to-br from-purple-900 via-indigo-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl">
+        <div class="flex items-center justify-between flex-wrap gap-4 mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-purple-500/50">
+              🟣
+            </div>
+            <div>
+              <div class="text-xs font-bold text-purple-300 uppercase tracking-wider">Голосовой ассистент</div>
+              <h3 class="text-xl font-bold">Интеграция с умной колонкой (Алиса / Маруся)</h3>
+            </div>
+          </div>
+
+          <!-- Sound Waves Animation -->
+          <div id="speakerWaves" class="hidden flex items-end gap-1 h-8">
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+          </div>
+        </div>
+
+        <p class="text-xs text-purple-200 mb-6 leading-relaxed">
+          Синхронизируйте приложение с вашей колонкой. Голосовой помощник напомнит о времени приема пищи, включит звуковой таймер жевания и проинструктирует о безопасной подаче!
+        </p>
+
+        <!-- Speaker Prompt Buttons -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <button onclick="playSpeakerPrompt('lunch_pieces')" class="p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-left transition">
+            <div class="text-xs font-bold text-amber-300">Напоминание на обед</div>
+            <div class="text-[11px] text-purple-100 mt-1">«Алиса, напомни про кусочки тефтельки»</div>
+          </button>
+
+          <button onclick="playSpeakerPrompt('chew_exercise')" class="p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-left transition">
+            <div class="text-xs font-bold text-amber-300">Таймер жевания</div>
+            <div class="text-[11px] text-purple-100 mt-1">«Алиса, запусти хруст яблока»</div>
+          </button>
+
+          <button onclick="playSpeakerPrompt('water_reminder')" class="p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-left transition">
+            <div class="text-xs font-bold text-amber-300">Водный баланс</div>
+            <div class="text-[11px] text-purple-100 mt-1">«Алиса, напомни про чашку с водой»</div>
+          </button>
+
+          <button onclick="playSpeakerPrompt('gag_calm')" class="p-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 text-left transition">
+            <div class="text-xs font-bold text-amber-300">Антипаника</div>
+            <div class="text-[11px] text-purple-100 mt-1">«Маруся, ребенок кашляет от кусочка»</div>
+          </button>
+        </div>
+
+        <!-- Output speech box -->
+        <div class="bg-black/30 rounded-2xl p-4 border border-white/10 text-xs text-purple-100 font-mono">
+          <span class="text-purple-400 font-bold block mb-1">Речь голосового ассистента:</span>
+          <span id="speakerOutputText">«Нажмите на любую карточку выше, чтобы колонка озвучила совет вслух!»</span>
+        </div>
+      </div>
+
+      <!-- Schedule & Calendar Export -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Calendar Sync -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-wider mb-2">
+              <i data-lucide="calendar" class="w-4 h-4"></i>
+              Синхронизация с календарем
+            </div>
+            <h4 class="text-base font-bold text-slate-900">Экспорт расписания в Google / Apple Calendar</h4>
+            <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              Выгрузите готовое расписание 4 основных кормлений и интервалов питья в формате .ics, чтобы получать уведомления на смартфоне или часах.
+            </p>
+          </div>
+
+          <button onclick="exportCalendarICS()" class="mt-6 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition">
+            <i data-lucide="download" class="w-4 h-4 text-amber-400"></i>
+            Скачать календарь кормлений (.ics)
+          </button>
+        </div>
+
+        <!-- Push Notifications -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-emerald-600 text-xs font-bold uppercase tracking-wider mb-2">
+              <i data-lucide="bell" class="w-4 h-4"></i>
+              Браузерные уведомления
+            </div>
+            <h4 class="text-base font-bold text-slate-900">Всплывающие напоминания на экране</h4>
+            <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              Получайте мягкие напоминания: когда пора предложить воду из чашки, нарезать брусочки моркови или зафиксировать новый зубик.
+            </p>
+          </div>
+
+          <button onclick="requestPushNotifications()" class="mt-6 w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition">
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            Включить пуш-уведомления
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal 0: Auth Modal (Login / Register) -->
+  <div id="authModal" onclick="if(event.target === this) closeAuthModal()" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 hidden overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative border border-slate-100 my-6 animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-600 p-2 rounded-full hover:bg-slate-100 transition" title="Закрыть">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Logo & Title -->
+      <div class="text-center mb-5">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 text-white flex items-center justify-center text-2xl shadow-md shadow-amber-200 mx-auto mb-2.5">
+          🥕
+        </div>
+        <h3 class="text-2xl font-black text-slate-900 tracking-tight">Жуй-Малыш</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Создайте аккаунт и ведите персональный дневник прикорма вашего ребенка</p>
+      </div>
+
+      <!-- Auth Tabs Switcher -->
+      <div class="flex p-1 bg-slate-100 rounded-2xl mb-4">
+        <button id="authTabBtnRegister" type="button" onclick="switchAuthTab('register')" class="flex-1 py-2 text-xs font-black rounded-xl transition bg-white text-amber-700 shadow-sm">
+          Регистрация
+        </button>
+        <button id="authTabBtnLogin" type="button" onclick="switchAuthTab('login')" class="flex-1 py-2 text-xs font-black rounded-xl transition text-slate-500 hover:text-slate-800">
+          Вход
+        </button>
+      </div>
+
+      <!-- Register Form -->
+      <form id="authRegisterForm" onsubmit="handleRegister(event)" class="space-y-3.5">
+        <div id="regError" class="hidden text-xs bg-rose-50 text-rose-700 p-2.5 rounded-xl border border-rose-200 font-medium"></div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Ваше имя (родитель)</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="regUsername" required placeholder="Например: Альбина (мама)" class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Email</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="email" id="regEmail" required placeholder="mama@example.com" class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Пароль</label>
+            <input type="password" id="regPassword" required placeholder="Минимум 4 символа" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Повторите пароль</label>
+            <input type="password" id="regPasswordConfirm" required placeholder="Повторите" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Child Starter Card -->
+        <div class="p-3 bg-amber-50/70 rounded-2xl border border-amber-200/80 space-y-2.5">
+          <div class="flex items-center gap-1.5 text-xs font-extrabold text-amber-900">
+            <span>👶</span>
+            <span>Данные вашего малыша (можно дополнить в профиле)</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Имя малыша</label>
+              <input type="text" id="regChildName" placeholder="Например: Марк, София" class="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Дата рождения</label>
+              <input type="date" id="regChildBirth" class="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Пол</label>
+              <select id="regChildGender" class="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white">
+                <option value="boy">Мальчик 👦</option>
+                <option value="girl">Девочка 👧</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Этап прикорма</label>
+              <select id="regChildStage" class="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white">
+                <option value="stage_1">1 этап: Знакомство (4-6 мес)</option>
+                <option value="stage_2">2 этап: Пюре (6-7 мес)</option>
+                <option value="stage_3">3 этап: Микро-комочки (7-8 мес)</option>
+                <option value="stage_4">4 этап: Кусочки (8-9 мес)</option>
+                <option value="stage_5">5 этап: Пальчиковая еда (9-10 мес)</option>
+                <option value="stage_6">6 этап: Общий стол (11-12+ мес)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs sm:text-sm shadow-md shadow-amber-200 transition">
+          Создать аккаунт и начать 🚀
+        </button>
+
+        <p class="text-xs text-slate-500 text-center pt-1">
+          Уже есть аккаунт? <a href="javascript:void(0)" onclick="switchAuthTab('login')" class="text-amber-600 font-bold hover:underline">Войти</a>
+        </p>
+      </form>
+
+      <!-- Login Form -->
+      <form id="authLoginForm" onsubmit="handleLogin(event)" class="space-y-3.5 hidden">
+        <div id="loginError" class="hidden text-xs bg-rose-50 text-rose-700 p-2.5 rounded-xl border border-rose-200 font-medium"></div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Email</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="email" id="loginEmail" required placeholder="mama@example.com" class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Пароль</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs sm:text-sm shadow-md shadow-amber-200 transition">
+          Войти в аккаунт
+        </button>
+
+        <div class="pt-2 text-center space-y-2">
+          <button type="button" onclick="handleDemoLogin()" class="w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold border border-amber-200 transition flex items-center justify-center gap-1.5">
+            <span>✨</span>
+            <span>Попробовать демо-аккаунт (Тимофей, 9 мес)</span>
+          </button>
+          <p class="text-xs text-slate-500">
+            Нет аккаунта? <a href="javascript:void(0)" onclick="switchAuthTab('register')" class="text-amber-600 font-bold hover:underline">Зарегистрироваться</a>
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 1: Add Meal -->
+  <div id="addMealModal" onclick="if(event.target === this) closeAddMealModal()" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in duration-200 relative" onclick="event.stopPropagation()">
+      <button onclick="closeAddMealModal()" class="absolute top-5 right-5 text-slate-400 hover:text-rose-600 p-1.5 rounded-full hover:bg-slate-100 transition" title="Закрыть (Esc или клик вне окна)">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 pr-8">
+        <h3 class="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+          <span>🥣</span> Добавить прием пищи в чек-лист
+        </h3>
+      </div>
+
+      <form id="addMealForm" onsubmit="submitMealHandler(event)" class="space-y-4">
+        <!-- Meal Type -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Прием пищи</label>
+          <select name="meal_type" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold">
+            <option value="breakfast">Завтрак 🌅</option>
+            <option value="lunch">Обед ☀️</option>
+            <option value="snack">Полдник 🍵</option>
+            <option value="dinner">Ужин 🌙</option>
+          </select>
+        </div>
+
+        <!-- Food Name -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Блюдо или продукт</label>
+          <input type="text" name="food_name" required placeholder="Например: Паровая тефтелька с кабачком" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+        </div>
+
+        <!-- Texture -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Текстура продукта</label>
+          <select name="texture" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold">
+            <option value="puree">🥣 Пюре (гомогенное)</option>
+            <option value="soft_pieces" selected>🍲 Мягкие кусочки (разминаются вилкой)</option>
+            <option value="finger_food">🥦 Пальчиковая еда (брусочки)</option>
+            <option value="solid">🥕 Твердая пища (хрустим)</option>
+          </select>
+        </div>
+
+        <!-- Chewing autonomy mark (Жевал сам / с помощью / отказался) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Навык и самостоятельность</label>
+          <select name="chewing_status" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold">
+            <option value="self">🟢 Жевал сам (активно работал челюстью)</option>
+            <option value="with_help">🟡 Ел с помощью (докармливали ложкой)</option>
+            <option value="refused">🔴 Отказался (не проявил интерес)</option>
+          </select>
+        </div>
+
+        <!-- Gag reflex checkbox -->
+        <div class="p-3 bg-purple-50/60 rounded-xl border border-purple-200 flex items-center gap-2">
+          <input type="checkbox" name="gag_occurred" id="mealGagCheck" class="w-4 h-4 text-purple-600 rounded">
+          <label for="mealGagCheck" class="text-xs font-bold text-purple-900 cursor-pointer">
+            Сработал рвотный рефлекс (откашлялся, вытолкнул комок языком)
+          </label>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Заметки и реакция малыша</label>
+          <input type="text" name="notes" placeholder="С аппетитом, держал в кулачке, перекладывал языком..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeAddMealModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">
+            Отмена (Esc)
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-md shadow-amber-200">
+            Сохранить в чек-лист
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Chew Game -->
+  <div id="chewGameModal" onclick="if(event.target === this) closeChewGame()" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 text-center shadow-2xl relative overflow-hidden" onclick="event.stopPropagation()">
+      <button onclick="closeChewGame()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-600 p-2 rounded-full hover:bg-slate-100 transition" title="Закрыть (Esc или клик вне окна)">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      
+      <span class="text-xs font-black uppercase tracking-wider text-amber-600 bg-amber-100 px-3 py-1 rounded-full">
+        Тренажер жевания
+      </span>
+      <h3 class="text-2xl font-black text-slate-900 mt-2">Жуем: <span id="chewGameFoodName">яблочко</span>!</h3>
+      <p class="text-xs text-slate-500 mt-1">Нажимайте на маскота или помогайте малышу делать жевательные движения!</p>
+
+      <div class="my-6">
+        <div id="chewMascotIcon" onclick="recordChewClick()" class="text-7xl select-none cursor-pointer transform hover:scale-110 active:scale-95 transition">
+          🐰
+        </div>
+        <div class="text-xs text-amber-700 font-bold mt-2">Нажмите на зайку: хрусь! 🎶</div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200">
+          <div class="text-[11px] font-bold text-amber-800 uppercase">Жеваний сделано</div>
+          <div id="chewCountDisplay" class="text-3xl font-black text-amber-900 mt-1">0</div>
+        </div>
+        <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+          <div class="text-[11px] font-bold text-emerald-800 uppercase">Осталось времени</div>
+          <div id="chewTimerDisplay" class="text-3xl font-black text-emerald-900 mt-1">15с</div>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <button onclick="recordChewClick()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-sm shadow-lg shadow-amber-200 transition">
+          ХРУСЬ! ЖЕВАТЕЛЬНЫЙ КЛИК 🥕
+        </button>
+        <button onclick="closeChewGame()" class="w-full py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition">
+          Завершить игру (Esc)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Diploma "Юный жеватель" -->
+  <div id="diplomaModal" onclick="if(event.target === this) closeDiplomaModal()" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 hidden overflow-y-auto">
+    
+    <!-- Floating persistent screen close button -->
+    <button onclick="closeDiplomaModal()" class="no-print fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-900/90 hover:bg-rose-600 text-white font-bold text-xs shadow-2xl backdrop-blur-md transition-all border border-white/20" title="Закрыть (Esc или клик вне окна)">
+      <i data-lucide="x" class="w-4 h-4"></i>
+      <span>Закрыть (Esc)</span>
+    </button>
+
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl relative border-8 border-amber-400 diploma-border text-center my-6" onclick="event.stopPropagation()">
+      <button onclick="closeDiplomaModal()" class="no-print absolute top-4 right-4 text-slate-400 hover:text-rose-600 p-2 rounded-full hover:bg-slate-100 transition" title="Закрыть (Esc)">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="diploma-seal mx-auto mb-4 text-3xl font-black shadow-lg">
+        🏆
+      </div>
+
+      <span class="text-xs font-black uppercase tracking-widest text-amber-700">Официальная награда за успехи прикорма</span>
+      <h2 class="text-3xl sm:text-4xl font-black text-amber-950 mt-1 tracking-tight">ДИПЛОМ</h2>
+      <div class="text-lg font-bold text-amber-800 mt-0.5">«ЮНЫЙ ЖЕВАТЕЛЬ И ПОКОРИТЕЛЬ КУСОЧКОВ»</div>
+
+      <p class="text-xs text-slate-600 mt-4">Настоящим дипломом награждается храбрый малыш:</p>
+      <div id="diplomaChildName" class="text-3xl font-black text-slate-900 my-2 underline decoration-amber-400 decoration-4">
+        Тимофей
+      </div>
+
+      <p class="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+        За блестящее освоение навыка жевания, смелое знакомство с кусочками и твердой пищей, развитие крепких челюстей и подготовку речевого аппарата к красивым и четким словам!
+      </p>
+
+      <div class="flex items-center justify-around mt-8 pt-4 border-t border-amber-200 text-xs text-slate-600">
+        <div>
+          <span class="font-bold text-slate-800 block">Дата вручения:</span>
+          <span id="diplomaDate">01 ноября 2026</span>
+        </div>
+        <div>
+          <span class="font-bold text-slate-800 block">Наставники:</span>
+          <span>Клуб «Жуй-Малыш» 🥦</span>
+        </div>
+      </div>
+
+      <div class="no-print mt-6 flex justify-center gap-3">
+        <button onclick="printDiploma()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-md transition">
+          <i data-lucide="printer" class="w-4 h-4"></i> Распечатать диплом
+        </button>
+        <button onclick="closeDiplomaModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5">
+          <i data-lucide="x" class="w-4 h-4"></i> Закрыть (Esc)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Doctor Clinical Report (Выгрузка для врача) -->
+  <div id="doctorModal" onclick="if(event.target === this) closeDoctorReportModal()" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-start justify-center p-3 sm:p-6 md:p-8 hidden overflow-y-auto">
+    
+    <!-- Floating persistent screen close button (ALWAYS visible even when scrolled down!) -->
+    <button onclick="closeDoctorReportModal()" class="no-print fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-900/90 hover:bg-rose-600 text-white font-bold text-xs shadow-2xl backdrop-blur-md transition-all border border-white/20 transform hover:scale-105" title="Закрыть окно (Клавиша Esc или клик в пустоту)">
+      <i data-lucide="x" class="w-4 h-4"></i>
+      <span>Закрыть (Esc)</span>
+    </button>
+
+    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl my-4 sm:my-8 relative" onclick="event.stopPropagation()">
+      
+      <!-- Sticky Top Header inside Modal -->
+      <div class="no-print sticky -top-6 sm:-top-8 -mx-6 sm:-mx-8 px-6 sm:px-8 py-3.5 mb-4 bg-white/95 backdrop-blur-md border-b border-slate-200 flex justify-between items-center z-40 rounded-t-3xl shadow-xs">
+        <div class="flex items-center gap-2">
+          <span class="p-1.5 rounded-lg bg-amber-100 text-amber-800"><i data-lucide="file-text" class="w-4 h-4"></i></span>
+          <span class="text-xs sm:text-sm font-extrabold text-slate-800">Медицинский отчет для врача</span>
+        </div>
+        <div class="flex items-center gap-2 pr-12 sm:pr-0">
+          <button onclick="printDoctorReport()" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition">
+            <i data-lucide="printer" class="w-4 h-4 text-amber-400"></i> Распечатать / PDF
+          </button>
+          <button onclick="closeDoctorReportModal()" class="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold flex items-center gap-1 transition" title="Закрыть окно (Esc)">
+            <i data-lucide="x" class="w-4 h-4"></i> Закрыть (Esc)
+          </button>
+        </div>
+      </div>
+
+      <!-- Report Content Container -->
+      <div id="doctorReportContent"></div>
+
+      <!-- Bottom action bar inside modal -->
+      <div class="no-print mt-6 pt-4 border-t border-slate-200 flex flex-wrap justify-between items-center gap-3">
+        <span class="text-xs text-slate-400">Нажмите <strong>Esc</strong> или кликните за пределами окна, чтобы выйти</span>
+        <div class="flex items-center gap-2">
+          <button onclick="printDoctorReport()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition">
+            <i data-lucide="printer" class="w-4 h-4 text-amber-400"></i> Распечатать отчет
+          </button>
+          <button onclick="closeDoctorReportModal()" class="px-4 py-2 bg-slate-200 hover:bg-rose-500 hover:text-white text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1">
+            <i data-lucide="x" class="w-4 h-4"></i> Закрыть окно (Esc)
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal 5: New Forum Post -->
+  <div id="newPostModal" onclick="if(event.target === this) closeNewPostModal()" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative" onclick="event.stopPropagation()">
+      <button onclick="closeNewPostModal()" class="absolute top-5 right-5 text-slate-400 hover:text-rose-600 p-1.5 rounded-full hover:bg-slate-100 transition" title="Закрыть (Esc или клик вне окна)">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 pr-8">
+        <h3 class="font-bold text-slate-900 text-base">Задать вопрос родителям</h3>
+      </div>
+
+      <form onsubmit="submitNewForumPost(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Ваше имя / подпись</label>
+          <input type="text" name="author" placeholder="Например: Мария (сыну 8 мес)" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Категория / Тег</label>
+          <select name="tag" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold">
+            <option value="Ввод кусочков">Ввод кусочков</option>
+            <option value="Рвотный рефлекс">Рвотный рефлекс</option>
+            <option value="Прикус и речь">Прикус и речь</option>
+            <option value="Безопасная нарезка">Безопасная нарезка</option>
+            <option value="Отказ от еды">Отказ от еды</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Заголовок темы</label>
+          <input type="text" name="title" placeholder="Краткая суть вопроса..." required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Текст вопроса или истории</label>
+          <textarea name="content" rows="4" placeholder="Опишите ситуацию, возраст малыша и продукты..." required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"></textarea>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <button type="button" onclick="closeNewPostModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">
+            Отмена (Esc)
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-sm">
+            Опубликовать
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-auto bg-white border-t border-slate-100 py-6 text-center text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span>🥕 «Жуй-Малыш»</span>
+        <span>·</span>
+        <span>Доказательный прикорм, развитие жевания и речи</span>
+      </div>
+      <div>
+        <span>Разработано для заботливых родителей &middot; 2026</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Mobile Bottom App Bar (visible on mobile phones, hidden on desktop) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-1.5 py-1 flex justify-around items-center shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-safe">
+    <button data-tab="tracker" onclick="switchTab('tracker')" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-amber-600 transition active:scale-95">
+      <i data-lucide="calendar-check" class="w-5 h-5"></i>
+      <span class="text-[10px] font-extrabold mt-0.5">Трекер</span>
+    </button>
+    <button data-tab="profile" onclick="switchTab('profile')" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-slate-500 transition active:scale-95">
+      <i data-lucide="user" class="w-5 h-5"></i>
+      <span class="text-[10px] font-extrabold mt-0.5">Малыш</span>
+    </button>
+    <button data-tab="education" onclick="switchTab('education')" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-slate-500 transition active:scale-95">
+      <i data-lucide="book-open" class="w-5 h-5"></i>
+      <span class="text-[10px] font-extrabold mt-0.5">Уроки</span>
+    </button>
+    <button data-tab="analytics" onclick="switchTab('analytics')" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-slate-500 transition active:scale-95">
+      <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+      <span class="text-[10px] font-extrabold mt-0.5">Отчеты</span>
+    </button>
+    <button data-tab="games" onclick="switchTab('games')" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl text-slate-500 transition active:scale-95">
+      <i data-lucide="gamepad-2" class="w-5 h-5"></i>
+      <span class="text-[10px] font-extrabold mt-0.5">Игры</span>
+    </button>
+  </nav>
+
+  <!-- Modular Scripts -->
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/profile.js"></script>
+  <script src="/static/js/tracker.js"></script>
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/education.js"></script>
+  <script src="/static/js/games.js"></script>
+  <script src="/static/js/community.js"></script>
+  <script src="/static/js/reminders.js"></script>
+  <script src="/static/js/doctor_export.js"></script>
+
+</body>
+</html>
